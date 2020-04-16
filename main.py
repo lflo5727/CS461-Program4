@@ -38,7 +38,8 @@ def load_data():
 
         temp_review = review.Review(val[0], brand_name, valid_vars, val[3], val[4], val[5])
         ratings.append(temp_review)
-
+        
+    ratings_file.close()
     return ratings
 
 
