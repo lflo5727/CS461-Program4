@@ -6,6 +6,9 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import tensorflow_docs as tfdocs
+import tensorflow_docs.plots
+import tensorflow_docs.modeling
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,12 +29,12 @@ def main():
     # Load all the data with the processing, all values will be encoded to the index of previous lists
     ratings_list = load_data(brand_list, var_list, style_list, origin_list)
 
-    column_names = ["Brand", "Varieties", "Style", "Origin", "Stars"]
-    data_to_set = {"Brand": [], "Varieties": [], "Style": [], "Origin": [], "Stars": []}
+    column_names = ["Brand", "Variety", "Style", "Origin", "Stars"]
+    data_to_set = {"Brand": [], "Variety": [], "Style": [], "Origin": [], "Stars": []}
 
     for item in ratings_list:
         data_to_set["Brand"].append(item.brand)
-        data_to_set["Varieties"].append(item.variety)
+        data_to_set["Variety"].append(item.variety)
         data_to_set["Style"].append(item.style)
         data_to_set["Origin"].append(item.origin)
         data_to_set["Stars"].append(item.stars)
@@ -39,6 +42,36 @@ def main():
     dataset = pd.DataFrame(data_to_set, columns=column_names)
     print(dataset)
 
+    # Split data for training and testing
+    train_dataset = dataset.sample(frac=0.8, random_state=0)
+    test_dataset = dataset.drop(train_dataset.index)
+
+    train_stats = train_dataset.describe()
+    train_stats = train_stats.transpose()
+    print(train_stats)
+    print(dataset)
+
+    # Split target from data
+    train_labels = train_dataset.pop('Stars')
+    test_labels = test_dataset.pop('Stars')
+
+    normed_train_data = norm(train_dataset, train_stats)
+    normed_test_data = norm(test_dataset, train_stats)
+
+    model = build_model(train_dataset)
+
+    print(model.summary())
+
+    example_batch = normed_train_data[:10]
+    example_result = model.predict(example_batch)
+    print(example_result)
+
+    EPOCHS = 1000
+
+    history = model.fit(
+        normed_train_data, train_labels,
+        epochs=EPOCHS, validation_split=0.2, verbose=0,
+        callbacks=[tfdocs.modeling.EpochDots()])
 
 
 def load_data(major_brands, top_vars, styles, origins):
@@ -55,6 +88,11 @@ def load_data(major_brands, top_vars, styles, origins):
         # Keep clean of dirty input rows
         if len(val) < 3:
             continue
+        # Discard unrated data
+        try:
+            star = val[5]
+        except:
+            continue
 
         # Check if the brand is a main brand or "Other"
         # Encode as index (or 1 outside of index for Other) to make numeric Brand values
@@ -69,8 +107,9 @@ def load_data(major_brands, top_vars, styles, origins):
             if item in top_vars:
                 valid_vars.append(top_vars.index(item))
 
-        temp_review = review.Review(val[0], brand_name, valid_vars, styles.index(val[3]), origins.index(val[4]), val[5])
-        ratings.append(temp_review)
+        for var in valid_vars:
+            temp_review = review.Review(val[0], brand_name, var, styles.index(val[3]), origins.index(val[4]), star)
+            ratings.append(temp_review)
 
     ratings_file.close()
     return ratings
@@ -174,6 +213,19 @@ def get_sty_ori():
     return style_list, origin_list
 
 
+def build_model(dataset):
+    model = keras.Sequential([
+        layers.Dense(64, activation='relu', input_shape=[len(dataset.keys())]),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(1)
+    ])
+
+    optimizer = tf.keras.optimizers.RMSprop(0.001)
+
+    model.compile(loss='mse', optimizer=optimizer, metrics=['mae', 'mse'])
+    return model
+
+
 def cnt_max(in_list):
     """Returns a max from a list of count objects"""
     temp_max = count.Count("benchmark")
@@ -181,6 +233,10 @@ def cnt_max(in_list):
         if item.count > temp_max.count:
             temp_max = item
     return temp_max
+
+
+def norm(x, stats):
+    return (x - stats['mean']) / stats['std']
 
 
 if __name__ == "__main__":
