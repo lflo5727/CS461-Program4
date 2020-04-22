@@ -36,8 +36,10 @@ def main():
         data_to_set["Origin"].append(item.origin)
         data_to_set["Stars"].append(item.stars)
 
-    dataset = pd.DataFrame(data_to_set, columns = column_names)
+    dataset = pd.DataFrame(data_to_set, columns=column_names)
     print(dataset)
+
+
 
 def load_data(major_brands, top_vars, styles, origins):
     ratings = []
@@ -47,7 +49,10 @@ def load_data(major_brands, top_vars, styles, origins):
     ratings_file = open("ramen-ratings.csv", "r", encoding="utf-8")
     for line in ratings_file:
         val = line.split(',')
-
+        # Keep clean of Title row
+        if val[0] == "Review #":
+            continue
+        # Keep clean of dirty input rows
         if len(val) < 3:
             continue
 
