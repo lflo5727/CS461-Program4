@@ -8,4 +8,4 @@ class Review:
         self.stars = stars
 
     def __str__(self):
-        return "{}: {}, Varieties: {}, Stars: {}".format(self.idr, self.brand, self.variety, self.stars)
+        return "{}: {}, Varieties: {}, Style: {} Stars: {}".format(self.idr, self.brand, self.variety, self.style, self.stars)
