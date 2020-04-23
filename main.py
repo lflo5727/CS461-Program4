@@ -41,6 +41,7 @@ def main():
 
     dataset = pd.DataFrame(data_to_set, columns=column_names)
     print(dataset)
+    print(dataset.dtypes)
 
     # Split data for training and testing
     train_dataset = dataset.sample(frac=0.8, random_state=0)
@@ -65,13 +66,12 @@ def main():
     example_batch = normed_train_data[:10]
     example_result = model.predict(example_batch)
     print(example_result)
-
+    print(dataset.dtypes)
     EPOCHS = 1000
+    print(train_dataset.dtypes)
+    print(train_labels.dtypes)
 
-    history = model.fit(
-        normed_train_data, train_labels,
-        epochs=EPOCHS, validation_split=0.2, verbose=0,
-        callbacks=[tfdocs.modeling.EpochDots()])
+    #history = model.fit(normed_train_data, train_labels, epochs=EPOCHS, validation_split=0.2, verbose=0, callbacks=[tfdocs.modeling.EpochDots()])
 
 
 def load_data(major_brands, top_vars, styles, origins):
