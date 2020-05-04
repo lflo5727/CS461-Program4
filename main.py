@@ -9,9 +9,7 @@ from tensorflow.keras import layers
 import tensorflow_docs as tfdocs
 import tensorflow_docs.plots
 import tensorflow_docs.modeling
-from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 import review
@@ -42,17 +40,13 @@ def main():
     print(dataset)
 
     # Split data for training and testing
-    # Go for a flat split as K Fold appeared to return worse results
     train_dataset = dataset.sample(frac=0.8, random_state=0)
     test_dataset = dataset.drop(train_dataset.index)
-    #n_splits = 3
-    #kf = KFold(n_splits=n_splits, shuffle=True, random_state=2)
 
-    #result = next(kf.split(dataset), None)
-    #train_dataset = dataset.iloc[result[0]]
-    #test_dataset = dataset.iloc[result[1]]
 
+    print("Training")
     print(train_dataset)
+    print("Testing")
     print(test_dataset)
 
     train_stats = train_dataset.describe()
@@ -72,26 +66,8 @@ def main():
 
     print(model.summary())
 
-    example_batch = normed_train_data[:10]
-    example_result = model.predict(example_batch)
-    print(example_result)
     EPOCHS = 1000
-
-    history = model.fit(
-        normed_train_data,
-        train_labels,
-        epochs=EPOCHS,
-        validation_split=0.2,
-        verbose=0,
-        callbacks=[tfdocs.modeling.EpochDots()])
-
     plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
-
-    plotter.plot({'Basic': history}, metric="mae")
-    plt.ylim([0, 2])
-    plt.ylabel('MAE [Stars]')
-    plt.show()
-
     model = build_model(train_dataset)
 
     early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
@@ -130,6 +106,8 @@ def main():
     plt.xlabel("Prediction Error [Stars]")
     _ = plt.ylabel("Count")
     plt.show()
+
+
 
 
 def load_data(major_brands, top_vars, styles, origins):
