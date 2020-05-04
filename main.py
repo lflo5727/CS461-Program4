@@ -9,11 +9,9 @@ from tensorflow.keras import layers
 import tensorflow_docs as tfdocs
 import tensorflow_docs.plots
 import tensorflow_docs.modeling
-import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 import review
 import count
@@ -41,13 +39,17 @@ def main():
 
     dataset = pd.DataFrame(data_to_set, columns=column_names)
     print(dataset)
-    print(dataset.dtypes)
 
     # Split data for training and testing
+    # Go for a flat split as K Fold appeared to return worse results
     train_dataset = dataset.sample(frac=0.8, random_state=0)
     test_dataset = dataset.drop(train_dataset.index)
 
+    print(train_dataset)
+    print(test_dataset)
+
     train_stats = train_dataset.describe()
+    train_stats.pop("Stars")
     train_stats = train_stats.transpose()
     print(train_stats)
     print(dataset)
@@ -66,12 +68,61 @@ def main():
     example_batch = normed_train_data[:10]
     example_result = model.predict(example_batch)
     print(example_result)
-    print(dataset.dtypes)
     EPOCHS = 1000
-    print(train_dataset.dtypes)
-    print(train_labels.dtypes)
 
-    #history = model.fit(normed_train_data, train_labels, epochs=EPOCHS, validation_split=0.2, verbose=0, callbacks=[tfdocs.modeling.EpochDots()])
+    history = model.fit(
+        normed_train_data,
+        train_labels,
+        epochs=EPOCHS,
+        validation_split=0.2,
+        verbose=0,
+        callbacks=[tfdocs.modeling.EpochDots()])
+
+    plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
+
+    plotter.plot({'Basic': history}, metric="mae")
+    plt.ylim([0, 2])
+    plt.ylabel('MAE [Stars]')
+    plt.show()
+
+    model = build_model(train_dataset)
+
+    early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=50)
+
+    early_history = model.fit(
+        normed_train_data,
+        train_labels,
+        epochs=EPOCHS,
+        validation_split=0.2,
+        verbose=0,
+        callbacks=[early_stop, tfdocs.modeling.EpochDots()])
+
+    plotter.plot({'Basic': early_history}, metric="mae")
+    plt.ylim([0, 2])
+    plt.ylabel('MAE [Stars]')
+    plt.show()
+
+    loss, mae, mse = model.evaluate(normed_test_data, test_labels, verbose=2)
+
+    print("Testing set Mean Abs Error: {:5.2f} Stars".format(mae))
+
+    test_predictions = model.predict(normed_test_data).flatten()
+
+    a = plt.axes(aspect='equal')
+    plt.scatter(test_labels, test_predictions)
+    plt.xlabel('True Values [Stars]')
+    plt.ylabel('Predictions [Stars]')
+    lims = [0, 2]
+    plt.xlim(lims)
+    plt.ylim(lims)
+    _ = plt.plot(lims, lims)
+    plt.show()
+
+    error = test_predictions - test_labels
+    plt.hist(error, bins=25)
+    plt.xlabel("Prediction Error [Stars]")
+    _ = plt.ylabel("Count")
+    plt.show()
 
 
 def load_data(major_brands, top_vars, styles, origins):
@@ -90,7 +141,7 @@ def load_data(major_brands, top_vars, styles, origins):
             continue
         # Discard unrated data
         try:
-            star = val[5]
+            star = float(val[5])
         except:
             continue
 
