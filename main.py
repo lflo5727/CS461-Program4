@@ -9,6 +9,7 @@ from tensorflow.keras import layers
 import tensorflow_docs as tfdocs
 import tensorflow_docs.plots
 import tensorflow_docs.modeling
+from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -44,6 +45,12 @@ def main():
     # Go for a flat split as K Fold appeared to return worse results
     train_dataset = dataset.sample(frac=0.8, random_state=0)
     test_dataset = dataset.drop(train_dataset.index)
+    #n_splits = 3
+    #kf = KFold(n_splits=n_splits, shuffle=True, random_state=2)
+
+    #result = next(kf.split(dataset), None)
+    #train_dataset = dataset.iloc[result[0]]
+    #test_dataset = dataset.iloc[result[1]]
 
     print(train_dataset)
     print(test_dataset)
@@ -87,7 +94,7 @@ def main():
 
     model = build_model(train_dataset)
 
-    early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=50)
+    early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
 
     early_history = model.fit(
         normed_train_data,
@@ -108,11 +115,11 @@ def main():
 
     test_predictions = model.predict(normed_test_data).flatten()
 
-    a = plt.axes(aspect='equal')
+    plt.axes(aspect='equal')
     plt.scatter(test_labels, test_predictions)
     plt.xlabel('True Values [Stars]')
     plt.ylabel('Predictions [Stars]')
-    lims = [0, 2]
+    lims = [0, 5]
     plt.xlim(lims)
     plt.ylim(lims)
     _ = plt.plot(lims, lims)
